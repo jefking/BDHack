@@ -28,7 +28,7 @@ namespace products
         [LuisIntent("Search for Product")]
         public async Task SearchForProduct(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync("i want some flooring");
+            await context.PostAsync("this is working right?");
             
             context.Wait(MessageReceived);
         }
