@@ -28,13 +28,13 @@ namespace products
         [LuisIntent("Search for Product")]
         public async Task SearchForProduct(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync("this is working right?");
+            await context.PostAsync("Searching like a #BOSS");
             
             context.Wait(MessageReceived);
         }
 
         [LuisIntent("Get Support")]
-        public async Task SearchForProduct(IDialogContext context, LuisResult result)
+        public async Task GetSupport(IDialogContext context, LuisResult result)
         {
             await context.PostAsync("We know you want support but we are unable to help you at this time?");
 
