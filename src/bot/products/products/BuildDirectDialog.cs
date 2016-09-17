@@ -33,7 +33,7 @@
         [LuisIntent("Get Support")]
         public async Task GetSupport(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync("We know you want support but we are unable to help you at this time?");
+            await context.PostAsync("Please give us a call and we can assist you: 1-877-631-2845.");
 
             context.Wait(MessageReceived);
         }
