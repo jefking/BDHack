@@ -23,8 +23,14 @@
         [LuisIntent("Search for Product")]
         public async Task SearchForProduct(IDialogContext context, LuisResult result)
         {
-            await context.PostAsync("Searching like a #BOSS");
-
+            if (result.Entities.Any())
+            {
+                string criteria = string.Join(",", result.Entities.Select(e => e.Entity));
+                await context.PostAsync($"Searching for '{criteria}'...");
+            } else {
+                await context.PostAsync("Searching like a #BOSS (not sure exactly what you want...)");
+            }
+            
             context.Wait(MessageReceived);
         }
         #endregion

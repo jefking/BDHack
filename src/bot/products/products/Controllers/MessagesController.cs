@@ -49,7 +49,7 @@ namespace products
                 switch (activity.GetActivityType())
                 {
                     case ActivityTypes.Message:
-                        await Conversation.SendAsync(activity, () => new BuildDriecrDialog());
+                        await Conversation.SendAsync(activity, () => new BuildDirectDialog());
                         break;
 
                     case ActivityTypes.ConversationUpdate:
