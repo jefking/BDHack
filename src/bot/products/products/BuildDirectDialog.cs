@@ -1,16 +1,13 @@
 ﻿using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Builder.Luis;
 using Microsoft.Bot.Builder.Luis.Models;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace products
 {
     [LuisModel("229c49a2-d6ce-4e33-9bd1-e0e5a942dd6e", "83df26914f4f4499be8b48456a9d1ed5")]
-    public class BuildDriecrDialog : LuisDialog<object>
+    public class BuildDirectDialog : LuisDialog<object>
     {
         
         public const string DefaultAlarmWhat = "default";
