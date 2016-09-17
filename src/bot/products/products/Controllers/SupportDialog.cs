@@ -10,7 +10,7 @@
     using System.Web;
 
     [LuisModel("229c49a2-d6ce-4e33-9bd1-e0e5a942dd6e", "83df26914f4f4499be8b48456a9d1ed5")]
-    public class SupportDialog : LuisDialog<object>
+    public class SupportDialog : LuisDialog<string>
     {
         [LuisIntent("")]
         public async Task None(IDialogContext context, LuisResult result)
