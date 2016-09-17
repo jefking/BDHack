@@ -7,34 +7,61 @@ using System.Web.Http;
 using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
 using Newtonsoft.Json;
+using Microsoft.Bot.Builder.Luis;
+using Microsoft.Bot.Builder.Dialogs;
 
 namespace products
 {
     [BotAuthentication]
+    
     public class MessagesController : ApiController
     {
         /// <summary>
         /// POST: api/Messages
         /// Receive a message from a user and reply to it
         /// </summary>
-        public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
-        {
-            if (activity.Type == ActivityTypes.Message)
-            {
-                ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-                // calculate something for us to return
-                int length = (activity.Text ?? string.Empty).Length;
+        //public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
+        //{
+        //    if (activity.Type == ActivityTypes.Message)
+        //    {
+        //        ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+        //        // calculate something for us to return
+        //        int length = (activity.Text ?? string.Empty).Length;
 
-                // return our reply to the user
-                Activity reply = activity.CreateReply($"You sent {activity.Text} which was {length} characters");
-                await connector.Conversations.ReplyToActivityAsync(reply);
-            }
-            else
+        //        // return our reply to the user
+        //        Activity reply = activity.CreateReply($"You sent {activity.Text} which was {length} characters...");
+        //        await connector.Conversations.ReplyToActivityAsync(reply);
+        //    }
+        //    else
+        //    {
+        //        HandleSystemMessage(activity);
+        //    }
+        //    var response = Request.CreateResponse(HttpStatusCode.OK);
+        //    return response;
+        //}
+
+        [ResponseType(typeof(void))]
+        public virtual async Task<HttpResponseMessage> Post([FromBody] Activity activity)
+        {
+            if (activity != null)
             {
-                HandleSystemMessage(activity);
+                // one of these will have an interface and process it
+                switch (activity.GetActivityType())
+                {
+                    case ActivityTypes.Message:
+                        await Conversation.SendAsync(activity, () => new SimpleAlarmDialog());
+                        break;
+
+                    case ActivityTypes.ConversationUpdate:
+                    case ActivityTypes.ContactRelationUpdate:
+                    case ActivityTypes.Typing:
+                    case ActivityTypes.DeleteUserData:
+                    default:
+                        //Trace.TraceError($"Unknown activity type ignored: {activity.GetActivityType()}");
+                        break;
+                }
             }
-            var response = Request.CreateResponse(HttpStatusCode.OK);
-            return response;
+            return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }
 
         private Activity HandleSystemMessage(Activity message)
