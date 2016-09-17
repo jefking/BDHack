@@ -32,6 +32,14 @@ namespace products
             
             context.Wait(MessageReceived);
         }
+
+        [LuisIntent("Get Support")]
+        public async Task SearchForProduct(IDialogContext context, LuisResult result)
+        {
+            await context.PostAsync("We know you want support but we are unable to help you at this time?");
+
+            context.Wait(MessageReceived);
+        }
         //[LuisIntent("builtin.intent.alarm.find_alarm")]
         //public async Task FindAlarm(IDialogContext context, LuisResult result)
         //{
