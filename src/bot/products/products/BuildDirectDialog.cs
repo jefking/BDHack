@@ -48,9 +48,9 @@
                         Dictionary<String, String> hashCodes = new Dictionary<string, string>();
                         context.PrivateConversationData.SetValue("navigation-used", true);
 
-                        Navigation navigationToUse = searchResults.AvailableNavigation.First(n => !n.Name.ToLowerInvariant().Contains("categor"));
+                        Navigation navigationToUse = searchResults.AvailableNavigation.First(n => !n.Name.ToLowerInvariant().Contains("categor") && !n.Name.ToLowerInvariant().Contains("price"));
 
-                        navigationToUse.Refinements.ToList().ForEach(e => hashCodes.Add(e.Value.ToLowerInvariant(), e.HashedValue));
+                        navigationToUse.Refinements.Where(r => r.Value != null).ToList().ForEach(e => hashCodes.Add(e.Value.ToLowerInvariant(), e.HashedValue));
                         context.PrivateConversationData.SetValue("hashCodes", hashCodes);
 
                         IList<String> optionTextList = hashCodes.Select(hc => hc.Key).ToList();
@@ -95,8 +95,6 @@
                     SearchData searchResults = await bdApi.GetFullProductSearch(searchTerm, searchHash);
 
                     List<SearchProduct> allResults = searchResults.Products.ToList();
-                    IMessageActivity ma = context.MakeMessage();
-
 
                     IMessageActivity replyToConversation = createConversationFromResults(context, allResults, searchTerm, selectionValue);
 
@@ -148,25 +146,6 @@
             }
 
             return message;
-        }
-
-        public async Task AfterConfirming_ProductSearch(IDialogContext context, IAwaitable<bool> confirmation)
-        {
-            try {
-                
-                if (await confirmation)
-                {
-                    await context.PostAsync($"Ok, searching...");
-                }
-                else
-                {
-                    await context.PostAsync("Sorry, I couldn't figure out what you wanted - try again.");
-                }
-                context.Wait(MessageReceived);
-            } catch (Exception e)
-            {
-                throw e;
-            }
         }
 
         #region Support
@@ -308,7 +287,7 @@
             };
             var item = new EntityRecommendation
             {
-                Entity = "Toilet",
+                Entity = "Gold Toilet",
             };
 
             result.Entities.Add(item);
