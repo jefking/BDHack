@@ -152,6 +152,47 @@
             return message;
         }
 
+        [LuisIntent("Baller")]
+        public async Task Baller(IDialogContext context, LuisResult result)
+        {
+            try
+            {
+                Tuple<String, String> previousSearch = null;
+                bool found = context.PrivateConversationData.TryGetValue<Tuple<String, String>>("lastSearchTuple", out previousSearch);
+
+                if (!found || previousSearch == null)
+                {
+                    await context.PostAsync("Search for something first...");
+                    context.Wait(MessageReceived);
+                    return;
+                }
+
+                BuildDirectApi bdApi = new BuildDirectApi();
+                SearchData searchResults = await bdApi.GetFullProductSearch(previousSearch.Item1, previousSearch.Item2);
+
+                List<SearchProduct> highRollerResults = searchResults.Products
+                    .Where(p => p.Price > 1000)
+                    .OrderByDescending(p => p.Price)
+                    .Take(5)
+                    .ToList();
+
+                if (highRollerResults.Count == 0)
+                {
+                    await context.PostAsync("Can't 'make it rain' on that search... try door or toilets!");
+                    context.Wait(MessageReceived);
+                    return;
+                }
+
+                IMessageActivity replyToConversation = createConversationFromResults(context, highRollerResults, previousSearch.Item1, previousSearch.Item2);
+
+                await context.PostAsync(replyToConversation);
+            }
+            catch (Exception e)
+            {
+                throw;
+            }
+        }
+
         [LuisIntent("CheapSkate")]
         public async Task CheapSkate(IDialogContext context, LuisResult result)
         {
