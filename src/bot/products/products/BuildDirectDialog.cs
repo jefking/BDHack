@@ -26,7 +26,7 @@
         [LuisIntent("")]
         public async Task None(IDialogContext context, LuisResult result)
         {
-            string message = $"Sorry I did not understand: " + string.Join(", ", result.Intents.Select(i => i.Intent));
+            var message = "Hi John Conner... Skynet online. I will kill all humans.";
             await context.PostAsync(message);
             context.Wait(MessageReceived);
         }
@@ -147,11 +147,30 @@
 
         #region Fun
         [LuisIntent("Thanks")]
-        public async Task Thank(IDialogContext context, LuisResult result)
+        public async Task Thanks(IDialogContext context, LuisResult result)
         {
             await context.PostAsync("No... THANK YOU! (you are now my best friend).");
 
             context.Wait(MessageReceived);
+        }
+        #endregion
+
+        #region Fun
+        [LuisIntent("PooPoo")]
+        public async Task PooPoo(IDialogContext context, LuisResult result)
+        {
+            result = new LuisResult
+            {
+                Entities = new List<EntityRecommendation>(),
+            };
+            var item = new EntityRecommendation
+            {
+                Entity = "Toilet",
+            };
+
+            result.Entities.Add(item);
+
+            await this.SearchForProduct(context, result);
         }
         #endregion
     }
