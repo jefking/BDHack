@@ -47,7 +47,7 @@ namespace products.Models
     {
         public Brand Brand { get; set; }
         public Category Category { get; set; }
-        public float ComparablePrice { get; set; }
+        public float Price { get; set; }
         public string Image { get; set; }
         public string Title { get; set; }
         public string Url { get; set; }
