@@ -11,7 +11,7 @@
     using System.Threading.Tasks;
 
     [LuisModel("229c49a2-d6ce-4e33-9bd1-e0e5a942dd6e", "83df26914f4f4499be8b48456a9d1ed5")]
-     [Serializable]
+    [Serializable]
     public class BuildDirectDialog : LuisDialog<object>
     {
         #region None
@@ -55,12 +55,16 @@
 
                         IList<String> optionTextList = hashCodes.Select(hc => hc.Key).ToList();
 
-                        PromptOptions<string> promptOptions = new PromptOptions<string>($"What '{navigationToUse.DisplayName}' are you searching for?", options: optionTextList);
+                        PromptOptions<string> promptOptions = new PromptOptions<string>($"We've got lots of those.  Let's try to narrow the list down a bit.  What '{navigationToUse.DisplayName}' are you searching for?", options: optionTextList);
                         // callback does not get fired unless Dialog is [Serializable].
                         PromptDialog.Choice(context, ApplyRefiner, promptOptions);
                     } else {
                         context.PrivateConversationData.SetValue("lastSearchTuple", new Tuple<String, String>(searchTerm, null));
-                        IMessageActivity replyToConversation = createConversationFromResults(context, allResults, searchTerm, null);
+
+                        List<SearchProduct> displayList = allResults.Take(2).ToList();
+                        String title = $"Looking for '{searchTerm}', I've found {allResults.Count} choices I think you'd like.";
+
+                        IMessageActivity replyToConversation = createConversationFromResults(context, title, displayList, searchTerm, null);
 
                         await context.PostAsync(replyToConversation);
                         context.Wait(MessageReceived);
@@ -98,9 +102,11 @@
                     BuildDirectApi bdApi = new BuildDirectApi();
                     SearchData searchResults = await bdApi.GetFullProductSearch(searchTerm, searchHash);
 
-                    List<SearchProduct> allResults = searchResults.Products.ToList();
+                    List<SearchProduct> displayProducts = searchResults.Products.Take(2).ToList();
 
-                    IMessageActivity replyToConversation = createConversationFromResults(context, allResults, searchTerm, selectionValue);
+                    String title = $"Looking for '{searchTerm}' and limiting to {selectionValue} items, here are {displayProducts.Count} I think you will like.";
+                    
+                    IMessageActivity replyToConversation = createConversationFromResults(context, title, displayProducts, searchTerm, selectionValue);
 
                     await context.PostAsync(replyToConversation);
                     context.Wait(MessageReceived);
@@ -112,13 +118,10 @@
         }
         #endregion
 
-        private IMessageActivity createConversationFromResults(IDialogContext context, List<SearchProduct> allResults, String searchTerm, String subselectionValue)
+        private IMessageActivity createConversationFromResults(IDialogContext context, String title, List<SearchProduct> allResults, String searchTerm, String subselectionValue)
         {
-            List<SearchProduct> searchResultsFirstTwo = allResults.Take(3).ToList();
             IMessageActivity message = context.MakeMessage();
-
-            String messageSuffix = String.IsNullOrEmpty(subselectionValue) ? String.Empty : $" --> {subselectionValue}";
-            message.Text = $"Showing {searchResultsFirstTwo.Count} of {allResults.Count} on search '{searchTerm}' {messageSuffix}";
+            message.Text = title;
             message.Recipient = message.From;
             message.Type = "message";
             message.Attachments = new List<Attachment>();
@@ -126,7 +129,7 @@
             // AttachmentLayout options are list or carousel
             // message.AttachmentLayout = "carousel";
 
-            foreach (SearchProduct searchProduct in searchResultsFirstTwo)
+            foreach (SearchProduct searchProduct in allResults)
             {
                 List<CardImage> cardImages = new List<CardImage>();
                 cardImages.Add(new CardImage(url: searchProduct.Image));
@@ -173,7 +176,7 @@
                 List<SearchProduct> highRollerResults = searchResults.Products
                     .Where(p => p.Price > 1000)
                     .OrderByDescending(p => p.Price)
-                    .Take(5)
+                    .Take(2)
                     .ToList();
 
                 if (highRollerResults.Count == 0)
@@ -183,7 +186,7 @@
                     return;
                 }
 
-                IMessageActivity replyToConversation = createConversationFromResults(context, highRollerResults, previousSearch.Item1, previousSearch.Item2);
+                IMessageActivity replyToConversation = createConversationFromResults(context, "I've found some more expensive items!", highRollerResults, previousSearch.Item1, previousSearch.Item2);
 
                 await context.PostAsync(replyToConversation);
                 context.Wait(MessageReceived);
@@ -211,9 +214,9 @@
                 BuildDirectApi bdApi = new BuildDirectApi();
                 SearchData searchResults = await bdApi.GetFullProductSearch(previousSearch.Item1, previousSearch.Item2);
 
-                List<SearchProduct> cheapResults = searchResults.Products.OrderBy(p => p.Price).Take(5).ToList();
+                List<SearchProduct> cheapResults = searchResults.Products.OrderBy(p => p.Price).Take(2).ToList();
 
-                IMessageActivity replyToConversation = createConversationFromResults(context, cheapResults, previousSearch.Item1, previousSearch.Item2);
+                IMessageActivity replyToConversation = createConversationFromResults(context, "Here are some more affordable options", cheapResults, previousSearch.Item1, previousSearch.Item2);
 
                 await context.PostAsync(replyToConversation);
                 context.Wait(MessageReceived);
