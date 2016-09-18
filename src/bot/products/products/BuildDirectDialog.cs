@@ -153,9 +153,16 @@
 
             context.Wait(MessageReceived);
         }
-        #endregion
 
-        #region Fun
+        [LuisIntent("TechnicalSupport")]
+        public async Task TechnicalSupport(IDialogContext context, LuisResult result)
+        {
+            await context.PostAsync("Check out our developer portal: https://developer.builddirect.io/");
+
+            context.Wait(MessageReceived);
+        }
+
+
         [LuisIntent("PooPoo")]
         public async Task PooPoo(IDialogContext context, LuisResult result)
         {
