@@ -186,6 +186,7 @@
                 IMessageActivity replyToConversation = createConversationFromResults(context, highRollerResults, previousSearch.Item1, previousSearch.Item2);
 
                 await context.PostAsync(replyToConversation);
+                context.Wait(MessageReceived);
             }
             catch (Exception e)
             {
@@ -215,7 +216,9 @@
                 IMessageActivity replyToConversation = createConversationFromResults(context, cheapResults, previousSearch.Item1, previousSearch.Item2);
 
                 await context.PostAsync(replyToConversation);
-            }catch (Exception e)
+                context.Wait(MessageReceived);
+            }
+            catch (Exception e)
             {
                 throw;
             }
