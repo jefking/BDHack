@@ -14,15 +14,6 @@
      [Serializable]
     public class BuildDirectDialog : LuisDialog<object>
     {
-        //protected override async Task MessageReceived(IDialogContext context, IAwaitable<IMessageActivity> item)
-        //{
-        //    _message = (Activity)await item;
-        //    await base.MessageReceived(context, item);
-        //}
-
-        //[field: NonSerialized()]
-        //private Activity _message;
-
         #region None
         [LuisIntent("")]
         public async Task None(IDialogContext context, LuisResult result)
@@ -43,18 +34,10 @@
                     String searchTerm = string.Join(" ", result.Entities.Select(e => e.Entity));
 
                     BuildDirectApi bdApi = new BuildDirectApi();
-                    SearchData searchResults = null;
-
-                    // this means that user was prompted with options (ie: choose a color).
-                    searchResults = await bdApi.GetFullProductSearch(searchTerm);
+                    SearchData searchResults = await bdApi.GetFullProductSearch(searchTerm);
 
                     List<SearchProduct> allResults = searchResults.Products.ToList();
-
-                    //IList<EntityRecommendation> propertyBagEntities = null;
-                    //bool found = context.PrivateConversationData.TryGetValue("entities", out propertyBagEntities);
-
-                    // If this is the first search and there are more than 5 results, we want to refine the search.
-                    if (/*!found && */ allResults.Count > 5)
+                    if (allResults.Count > 5)
                     {
                         context.PrivateConversationData.SetValue("entities", result.Entities.Select(e => e.Entity).ToArray());
                         
@@ -62,7 +45,6 @@
                             null :
                             searchResults.AvailableNavigation.ToList();
 
-                        // refinement being forced.  we only allow 1 refinement for the hackathon.
                         Dictionary<String, String> hashCodes = new Dictionary<string, string>();
                         context.PrivateConversationData.SetValue("navigation-used", true);
 
@@ -132,13 +114,13 @@
         {
             List<SearchProduct> searchResultsFirstTwo = allResults.Take(5).ToList();
             IMessageActivity message = context.MakeMessage();
-             message.Text = $"Showing {searchResultsFirstTwo.Count} of {allResults.Count} on search '{searchTerm}'.";
+            message.Text = $"Showing {searchResultsFirstTwo.Count} of {allResults.Count} on search '{searchTerm}'.";
             message.Recipient = message.From;
             message.Type = "message";
             message.Attachments = new List<Attachment>();
 
             // AttachmentLayout options are list or carousel
-            // yucky replyToConversation.AttachmentLayout = "carousel";
+            message.AttachmentLayout = "carousel";
 
             foreach (SearchProduct searchProduct in searchResultsFirstTwo)
             {
