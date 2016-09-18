@@ -154,5 +154,35 @@
             context.Wait(MessageReceived);
         }
         #endregion
+
+        #region Fun
+        [LuisIntent("Thanks")]
+        public async Task Thank(IDialogContext context, LuisResult result)
+        {
+            await context.PostAsync("No... THANK YOU! (you are now my best friend).");
+
+            context.Wait(MessageReceived);
+        }
+        #endregion
+
+        #region Fun
+        [LuisIntent("PooPoo")]
+        public async Task PooPoo(IDialogContext context, LuisResult result)
+        {
+            result = new LuisResult()
+            {
+                Entities = new List<EntityRecommendation>(),
+            };
+            var item = new EntityRecommendation()
+            {
+                Score = 1,
+                Entity = "Toilet",
+            };
+
+            result.Entities.Add(item);
+
+            await this.SearchForProduct(context, result);
+        }
+        #endregion
     }
 }
