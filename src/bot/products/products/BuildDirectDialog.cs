@@ -26,7 +26,7 @@
         [LuisIntent("")]
         public async Task None(IDialogContext context, LuisResult result)
         {
-            var message = "Hi John Conner... Skynet online. I will kill all humans.";
+            var message = "Skynet online. I will kill all humans.";
             await context.PostAsync(message);
             context.Wait(MessageReceived);
         }
