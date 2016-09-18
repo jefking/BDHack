@@ -108,8 +108,15 @@
         }
         #endregion
 
-        private IMessageActivity createConversationFromResults(IDialogContext context, List<SearchProduct> allResults, String searchTerm, String subselectionValue)
+        private IMessageActivity createConversationFromResults(IDialogContext context, List<SearchProduct> allResults, String searchTerm, String subselectionValue, bool cheapskateMode = false)
         {
+            context.PrivateConversationData.SetValue("lastSearchTuple", new Tuple<String, String>(searchTerm, subselectionValue));
+
+            if (cheapskateMode)
+            {
+
+            }
+
             List<SearchProduct> searchResultsFirstTwo = allResults.Take(3).ToList();
             IMessageActivity message = context.MakeMessage();
 
@@ -146,6 +153,28 @@
             }
 
             return message;
+        }
+
+        [LuisIntent("CheapSkate")]
+        public async Task CheapSkate(IDialogContext context, LuisResult result)
+        {
+            Tuple<String, String> previousSearch = null;
+            bool found = context.PrivateConversationData.TryGetValue<Tuple<String, String>>("lastSearchTuple", out previousSearch);
+
+            if (!found || previousSearch == null) {
+                await context.PostAsync("Search for something first...");
+                context.Wait(MessageReceived);
+                return;
+            }
+
+            BuildDirectApi bdApi = new BuildDirectApi();
+            SearchData searchResults = await bdApi.GetFullProductSearch(previousSearch.Item1, previousSearch.Item2);
+
+            List<SearchProduct> cheapResults = searchResults.Products.OrderBy(p => p.Price).Take(5).ToList();
+
+            IMessageActivity replyToConversation = createConversationFromResults(context, cheapResults, previousSearch.Item1, previousSearch.Item2);
+
+            await context.PostAsync(replyToConversation);
         }
 
         #region Support
