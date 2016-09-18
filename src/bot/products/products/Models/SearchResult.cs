@@ -40,6 +40,7 @@ namespace products.Models
         public int Count { get; set; }
         public string Value { get; set; }
         public bool HasResults { get; set; }
+        public string HashedValue { get; set; }
     }
 
     public class SearchProduct
