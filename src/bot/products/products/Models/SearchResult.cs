@@ -13,7 +13,7 @@ namespace products.Models
         public string Query { get; set; }
         public string OriginalQuery { get; set; }
         public PageInfo PageInfo { get; set; }
-        public IEnumerable<Navigation> AvailableNavigations { get; set; }
+        public IEnumerable<Navigation> AvailableNavigation { get; set; }
         public IEnumerable<SearchProduct> Products { get; set; }
     }
 
