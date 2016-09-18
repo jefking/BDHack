@@ -167,9 +167,6 @@
             context.Wait(MessageReceived);
         }
 
-        #endregion
-
-        #region Fun
         [LuisIntent("Faq")]
         public async Task Faq(IDialogContext context, LuisResult result)
         {
@@ -258,13 +255,6 @@
         public async Task Faq12(IDialogContext context, LuisResult result)
         {
             await context.PostAsync("Unfortunately, we cannot offer guarantees on container shipment timelines. At this time, most containers take 8-10 weeks from time payment is received. There is a chance that it may take longer because of factors beyond our control. For example, security measures undertaken by U.S. Customs and Border Protection could possibly delay shipment.");
-
-            context.Wait(MessageReceived);
-        }
-        [LuisIntent("Faq13")]
-        public async Task Faq13(IDialogContext context, LuisResult result)
-        {
-            await context.PostAsync("It is reasonable to expect anywhere from 2%-10% breakage or damage, depending on the product. If breakage is above 10%, we would ask you to have it noted on the logistics receiving document and take pictures. Please make a claim with us within 10 days of receiving the order.");
 
             context.Wait(MessageReceived);
         }
