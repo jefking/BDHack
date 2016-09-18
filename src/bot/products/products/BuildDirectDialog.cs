@@ -59,7 +59,7 @@
                         // callback does not get fired unless Dialog is [Serializable].
                         PromptDialog.Choice(context, ApplyRefiner, promptOptions);
                     } else {
-                        IMessageActivity replyToConversation = createConversationFromResults(context, allResults, searchTerm);
+                        IMessageActivity replyToConversation = createConversationFromResults(context, allResults, searchTerm, null);
 
                         await context.PostAsync(replyToConversation);
                         context.Wait(MessageReceived);
@@ -98,7 +98,7 @@
                     IMessageActivity ma = context.MakeMessage();
 
 
-                    IMessageActivity replyToConversation = createConversationFromResults(context, allResults, searchTerm);
+                    IMessageActivity replyToConversation = createConversationFromResults(context, allResults, searchTerm, selectionValue);
 
                     await context.PostAsync(replyToConversation);
                     context.Wait(MessageReceived);
@@ -110,17 +110,19 @@
         }
         #endregion
 
-        private IMessageActivity createConversationFromResults(IDialogContext context, List<SearchProduct> allResults, String searchTerm)
+        private IMessageActivity createConversationFromResults(IDialogContext context, List<SearchProduct> allResults, String searchTerm, String subselectionValue)
         {
-            List<SearchProduct> searchResultsFirstTwo = allResults.Take(5).ToList();
+            List<SearchProduct> searchResultsFirstTwo = allResults.Take(3).ToList();
             IMessageActivity message = context.MakeMessage();
-            message.Text = $"Showing {searchResultsFirstTwo.Count} of {allResults.Count} on search '{searchTerm}'.";
+
+            String messageSuffix = String.IsNullOrEmpty(subselectionValue) ? String.Empty : $" --> {subselectionValue}";
+            message.Text = $"Showing {searchResultsFirstTwo.Count} of {allResults.Count} on search '{searchTerm}' {messageSuffix}";
             message.Recipient = message.From;
             message.Type = "message";
             message.Attachments = new List<Attachment>();
 
             // AttachmentLayout options are list or carousel
-            message.AttachmentLayout = "carousel";
+            // message.AttachmentLayout = "carousel";
 
             foreach (SearchProduct searchProduct in searchResultsFirstTwo)
             {
