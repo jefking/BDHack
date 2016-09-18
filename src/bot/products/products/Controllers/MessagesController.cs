@@ -1,5 +1,6 @@
 ﻿using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Connector;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -14,25 +15,30 @@ namespace products
         [ResponseType(typeof(void))]
         public virtual async Task<HttpResponseMessage> Post([FromBody] Activity activity)
         {
-            if (activity != null)
-            {
-                // one of these will have an interface and process it
-                switch (activity.GetActivityType())
+            try {
+                if (activity != null)
                 {
-                    case ActivityTypes.Message:
-                        await Conversation.SendAsync(activity, () => new BuildDirectDialog());
-                        break;
+                    // one of these will have an interface and process it
+                    switch (activity.GetActivityType())
+                    {
+                        case ActivityTypes.Message:
+                            await Conversation.SendAsync(activity, () => new BuildDirectDialog());
+                            break;
 
-                    case ActivityTypes.ConversationUpdate:
-                    case ActivityTypes.ContactRelationUpdate:
-                    case ActivityTypes.Typing:
-                    case ActivityTypes.DeleteUserData:
-                    default:
-                        //Trace.TraceError($"Unknown activity type ignored: {activity.GetActivityType()}");
-                        break;
+                        case ActivityTypes.ConversationUpdate:
+                        case ActivityTypes.ContactRelationUpdate:
+                        case ActivityTypes.Typing:
+                        case ActivityTypes.DeleteUserData:
+                        default:
+                            //Trace.TraceError($"Unknown activity type ignored: {activity.GetActivityType()}");
+                            break;
+                    }
                 }
+                return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
+            } catch (Exception e)
+            {
+                throw;
             }
-            return new HttpResponseMessage(System.Net.HttpStatusCode.Accepted);
         }
 
         private Activity HandleSystemMessage(Activity message)

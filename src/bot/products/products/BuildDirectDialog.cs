@@ -11,16 +11,17 @@
     using System.Threading.Tasks;
 
     [LuisModel("229c49a2-d6ce-4e33-9bd1-e0e5a942dd6e", "83df26914f4f4499be8b48456a9d1ed5")]
+     [Serializable]
     public class BuildDirectDialog : LuisDialog<object>
     {
-        protected override async Task MessageReceived(IDialogContext context, IAwaitable<IMessageActivity> item)
-        {
-            _message = (Activity)await item;
-            await base.MessageReceived(context, item);
-        }
+        //protected override async Task MessageReceived(IDialogContext context, IAwaitable<IMessageActivity> item)
+        //{
+        //    _message = (Activity)await item;
+        //    await base.MessageReceived(context, item);
+        //}
 
-        [field: NonSerialized()]
-        private Activity _message;
+        //[field: NonSerialized()]
+        //private Activity _message;
 
         #region None
         [LuisIntent("")]
@@ -36,86 +37,135 @@
         [LuisIntent("Search for Product")]
         public async Task SearchForProduct(IDialogContext context, LuisResult result)
         {
-            if (result.Entities.Any())
-            {
-               
-                String searchTerm = string.Join(" ", result.Entities.Select(e => e.Entity));
+            try {
+                if (result.Entities.Any())
+                {
+                    String searchTerm = string.Join(" ", result.Entities.Select(e => e.Entity));
 
-                //PromptOptions<string> promptOptions = new PromptOptions<string>($"What are you searching for?", options: list);
-                //PromptDialog.Choice(context, ApplyRefiner, promptOptions);
-                
-                BuildDirectApi bdApi = new BuildDirectApi();
-                IEnumerable<SearchProduct> searchResults = await bdApi.GetProducts(searchTerm);
-                List<SearchProduct> allResults = searchResults.ToList();
-                List<SearchProduct> searchResultsFirstTwo = searchResults.Take(2).ToList();
+                    BuildDirectApi bdApi = new BuildDirectApi();
+                    SearchData searchResults = null;
 
-                Activity replyToConversation = _message.CreateReply($"Showing {searchResultsFirstTwo.Count} of {allResults.Count} on search '{searchTerm}'.");
-                replyToConversation.Recipient = _message.From;
-                replyToConversation.Type = "message";
-                replyToConversation.Attachments = new List<Attachment>();
+                    // this means that user was prompted with options (ie: choose a color).
+                    searchResults = await bdApi.GetFullProductSearch(searchTerm);
 
-                // AttachmentLayout options are list or carousel
-                // yucky replyToConversation.AttachmentLayout = "carousel";
+                    List<SearchProduct> allResults = searchResults.Products.ToList();
 
-                foreach (SearchProduct searchProduct in searchResultsFirstTwo)
-                {    
-                    List<CardImage> cardImages = new List<CardImage>();
-                    cardImages.Add(new CardImage(url: searchProduct.Image));
-                    List<CardAction> cardButtons = new List<CardAction>();
-                    CardAction plButton = new CardAction()
+                    //IList<EntityRecommendation> propertyBagEntities = null;
+                    //bool found = context.PrivateConversationData.TryGetValue("entities", out propertyBagEntities);
+
+                    // If this is the first search and there are more than 5 results, we want to refine the search.
+                    if (/*!found && */ allResults.Count > 5)
                     {
-                        Value = searchProduct.Url,
-                        Type = "openUrl",
-                        Title = searchProduct.Title
-                    };
-                    cardButtons.Add(plButton);
-                    ThumbnailCard plCard = new ThumbnailCard()
-                    {
-                        Title = searchProduct.Title,
-                        Subtitle = searchProduct.Brand.Name,
-                        Images = cardImages,
-                        Buttons = cardButtons
-                    };
-                    Attachment plAttachment = plCard.ToAttachment();
-                    replyToConversation.Attachments.Add(plAttachment);
+                        context.PrivateConversationData.SetValue("entities", result.Entities.Select(e => e.Entity).ToArray());
+                        
+                        List<Navigation> availableNavigations = (searchResults.AvailableNavigation == null) ?
+                            null :
+                            searchResults.AvailableNavigation.ToList();
+
+                        // refinement being forced.  we only allow 1 refinement for the hackathon.
+                        Dictionary<String, String> hashCodes = new Dictionary<string, string>();
+                        context.PrivateConversationData.SetValue("navigation-used", true);
+
+                        Navigation navigationToUse = searchResults.AvailableNavigation.First(n => !n.Name.ToLowerInvariant().Contains("categor"));
+
+                        navigationToUse.Refinements.ToList().ForEach(e => hashCodes.Add(e.Value.ToLowerInvariant(), e.HashedValue));
+                        context.PrivateConversationData.SetValue("hashCodes", hashCodes);
+
+                        IList<String> optionTextList = hashCodes.Select(hc => hc.Key).ToList();
+
+                        PromptOptions<string> promptOptions = new PromptOptions<string>($"What '{navigationToUse.DisplayName}' are you searching for?", options: optionTextList);
+                        // callback does not get fired unless Dialog is [Serializable].
+                        PromptDialog.Choice(context, ApplyRefiner, promptOptions);
+                    } else {
+                        IMessageActivity replyToConversation = createConversationFromResults(context, allResults, searchTerm);
+
+                        await context.PostAsync(replyToConversation);
+                        context.Wait(MessageReceived);
+                    }
+                } else {
+                    await context.PostAsync("Searching like a #BOSS (not sure exactly what you want...)");
                 }
-
-                await context.PostAsync(replyToConversation);
-                context.Wait(MessageReceived);
-                
-            } else {
-                await context.PostAsync("Searching like a #BOSS (not sure exactly what you want...)");
+            } catch (Exception e)
+            {
+                throw e;
             }
-            
-            //context.Wait(MessageReceived);
         }
 
         public async Task ApplyRefiner(IDialogContext context, IAwaitable<string> input)
         {
-            string selection = await input;
+            try {
+                string selection = await input;
 
-            if (selection != null && selection.ToLowerInvariant() == "cancel")
+                if (selection != null && selection.ToLowerInvariant() == "cancel")
+                {
+                    context.Done<string>(null);
+                }
+                else
+                {
+                    string selectionValue = selection;
+
+                    Dictionary<String, String> hashCodes = context.PrivateConversationData.Get<Dictionary<String, String>>("hashCodes");
+                    String searchHash = hashCodes.FirstOrDefault(hc => hc.Key == selectionValue.ToLowerInvariant()).Value;
+
+                    String[] originalSearchTerms = context.PrivateConversationData.Get<string[]>("entities");
+                    String searchTerm = string.Join(" ", originalSearchTerms);
+                    BuildDirectApi bdApi = new BuildDirectApi();
+                    SearchData searchResults = await bdApi.GetFullProductSearch(searchTerm, searchHash);
+
+                    List<SearchProduct> allResults = searchResults.Products.ToList();
+                    IMessageActivity ma = context.MakeMessage();
+
+
+                    IMessageActivity replyToConversation = createConversationFromResults(context, allResults, searchTerm);
+
+                    await context.PostAsync(replyToConversation);
+                    context.Wait(MessageReceived);
+                }
+            } catch (Exception e)
             {
-                context.Done<string>(null);
-            }
-            else
-            {
-                string value = ParseRefinerValue(selection);
-
-                //if (this.queryBuilder != null)
-                //{
-                //    this.queryBuilder.Refinements.Add(this.refiner, new string[] { value });
-                //}
-
-                context.Done(value);
+                throw e;
             }
         }
         #endregion
 
-        protected virtual string ParseRefinerValue(string value)
+        private IMessageActivity createConversationFromResults(IDialogContext context, List<SearchProduct> allResults, String searchTerm)
         {
-            return value.Substring(0, value.LastIndexOf('(') - 1);
+            List<SearchProduct> searchResultsFirstTwo = allResults.Take(5).ToList();
+            IMessageActivity message = context.MakeMessage();
+             message.Text = $"Showing {searchResultsFirstTwo.Count} of {allResults.Count} on search '{searchTerm}'.";
+            message.Recipient = message.From;
+            message.Type = "message";
+            message.Attachments = new List<Attachment>();
+
+            // AttachmentLayout options are list or carousel
+            // yucky replyToConversation.AttachmentLayout = "carousel";
+
+            foreach (SearchProduct searchProduct in searchResultsFirstTwo)
+            {
+                List<CardImage> cardImages = new List<CardImage>();
+                cardImages.Add(new CardImage(url: searchProduct.Image));
+                List<CardAction> cardButtons = new List<CardAction>();
+                CardAction plButton = new CardAction()
+                {
+                    Value = searchProduct.Url,
+                    Type = "openUrl",
+                    Title = searchProduct.Title
+                };
+                cardButtons.Add(plButton);
+                ThumbnailCard plCard = new ThumbnailCard()
+                {
+                    Title = searchProduct.Title,
+                    Subtitle = "$" + searchProduct.Price.ToString(),
+                    Images = cardImages,
+                    Buttons = cardButtons
+                };
+                Attachment plAttachment = plCard.ToAttachment();
+                message.Attachments.Add(plAttachment);
+            }
+
+            return message;
         }
+
         public async Task AfterConfirming_ProductSearch(IDialogContext context, IAwaitable<bool> confirmation)
         {
             try {
