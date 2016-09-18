@@ -157,7 +157,7 @@
 
         #region Fun
         [LuisIntent("Thanks")]
-        public async Task Thank(IDialogContext context, LuisResult result)
+        public async Task Thanks(IDialogContext context, LuisResult result)
         {
             await context.PostAsync("No... THANK YOU! (you are now my best friend).");
 
@@ -169,13 +169,12 @@
         [LuisIntent("PooPoo")]
         public async Task PooPoo(IDialogContext context, LuisResult result)
         {
-            result = new LuisResult()
+            result = new LuisResult
             {
                 Entities = new List<EntityRecommendation>(),
             };
-            var item = new EntityRecommendation()
+            var item = new EntityRecommendation
             {
-                Score = 1,
                 Entity = "Toilet",
             };
 
